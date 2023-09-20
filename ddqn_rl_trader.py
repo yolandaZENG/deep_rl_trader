@@ -6,6 +6,8 @@ from keras.layers import Dense, Activation, Flatten, CuDNNLSTM
 from keras.optimizers import Adam
 
 # keras-rl agent
+#TODO : Further read the keras-rl class
+#TODO : Hard code will look like this https://keras.io/examples/rl/deep_q_network_breakout/
 from rl.agents.dqn import DQNAgent
 from rl.policy import BoltzmannQPolicy, EpsGreedyQPolicy
 from rl.memory import SequentialMemory
@@ -21,6 +23,7 @@ def create_model(shape, nb_actions):
     model.add(CuDNNLSTM(64))
     model.add(Dense(32))
     model.add(Activation('relu'))
+    #TODO : Why the output is the dimension of nb_action ? Probability ?
     model.add(Dense(nb_actions, activation='linear'))
 
 def main():

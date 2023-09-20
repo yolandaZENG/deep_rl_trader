@@ -44,8 +44,11 @@ class OhlcvEnv(gym.Env):
             self.file_list = [x.name for x in Path(self.path).iterdir() if x.is_file()]
             self.file_list.sort()
         self.rand_episode = self.file_list.pop()
+
+        # TODO: Check how we prepare the random episode
         raw_df= pd.read_csv(self.path + self.rand_episode)
         extractor = process_data.FeatureExtractor(raw_df)
+        # this calculate the distance between ohlc
         self.df = extractor.add_bar_features() # bar features o, h, l, c ---> C(4,2) = 4*3/2*1 = 6 features
 
         ## selected manual fetuares
@@ -68,6 +71,8 @@ class OhlcvEnv(gym.Env):
         return [seed]
 
     def step(self, action):
+        #action-> the current action taken for the next step
+        #self.position-> the previous position
 
         if self.done:
             return self.state, self.reward, self.done, {}
@@ -82,27 +87,37 @@ class OhlcvEnv(gym.Env):
         # invalid action sequence is just considered hold
         # (e.g.) "buy - buy" would be considred "buy - hold"
         self.action = HOLD  # hold
+
         if action == BUY: # buy
+            
+            #no position previously and open the long position
             if self.position == FLAT: # if previous position was flat
                 self.position = LONG # update position to long
                 self.action = BUY # record action as buy
                 self.entry_price = self.closingPrice # maintain entry price
+
+            #short position and close the position
             elif self.position == SHORT: # if previous position was short
                 self.position = FLAT  # update position to flat
                 self.action = BUY # record action as buy
                 self.exit_price = self.closingPrice
+                #the reward is in percentage
                 self.reward += ((self.entry_price - self.exit_price)/self.exit_price + 1)*(1-self.fee)**2 - 1 # calculate reward
+                #TODO: Check what is krw, cumulative return ?
                 self.krw_balance = self.krw_balance * (1.0 + self.reward) # evaluate cumulative return in krw-won
                 self.entry_price = 0 # clear entry price
                 self.n_short += 1 # record number of short
-        elif action == 1: # vice versa for short trade
+
+        elif action == SELL: # vice versa for short trade
+
             if self.position == FLAT:
                 self.position = SHORT
-                self.action = 1
+                self.action = SELL
                 self.entry_price = self.closingPrice
+
             elif self.position == LONG:
                 self.position = FLAT
-                self.action = 1
+                self.action = SELL
                 self.exit_price = self.closingPrice
                 self.reward += ((self.exit_price - self.entry_price)/self.entry_price + 1)*(1-self.fee)**2 - 1
                 self.krw_balance = self.krw_balance * (1.0 + self.reward)
@@ -110,6 +125,7 @@ class OhlcvEnv(gym.Env):
                 self.n_long += 1
 
         # [coin + krw_won] total value evaluated in krw won
+        #Track every single step when we hold some position
         if(self.position == LONG):
             temp_reward = ((self.closingPrice - self.entry_price)/self.entry_price + 1)*(1-self.fee)**2 - 1
             new_portfolio = self.krw_balance * (1.0 + temp_reward)
@@ -127,6 +143,7 @@ class OhlcvEnv(gym.Env):
             print("Long: {0}/ Short: {1}".format(self.n_long, self.n_short))
         self.history.append((self.action, self.current_tick, self.closingPrice, self.portfolio, self.reward))
         self.updateState()
+        
         if (self.current_tick > (self.df.shape[0]) - self.window_size-1):
             self.done = True
             self.reward = self.get_profit() # return reward at end of the game

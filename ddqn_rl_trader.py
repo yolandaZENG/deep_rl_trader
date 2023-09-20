@@ -23,7 +23,7 @@ def create_model(shape, nb_actions):
     model.add(CuDNNLSTM(64))
     model.add(Dense(32))
     model.add(Activation('relu'))
-    #TODO : Why the output is the dimension of nb_action ? Probability ?
+    #? Why the output is the dimension of nb_action ? Probability ?
     model.add(Dense(nb_actions, activation='linear'))
 
 def main():
@@ -42,10 +42,13 @@ def main():
     env.seed(123)
 
     nb_actions = env.action_space.n
+    #NOTE : check the env.shape meaning, (self.window_size, self.n_features+4)
+    #? Why self.n_features+4?
     model = create_model(shape=env.shape, nb_actions=nb_actions)
     print(model.summary())
 
     # Finally, we configure and compile our agent. You can use every built-in Keras optimizer and even the metrics!
+    #? What is Sequential Memory used for ?
     memory = SequentialMemory(limit=50000, window_length=TIME_STEP)
     # policy = BoltzmannQPolicy()
     policy = EpsGreedyQPolicy()

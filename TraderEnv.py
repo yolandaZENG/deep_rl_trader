@@ -45,7 +45,7 @@ class OhlcvEnv(gym.Env):
             self.file_list.sort()
         self.rand_episode = self.file_list.pop()
 
-        # TODO: Check how we prepare the random episode
+        # ? Check how we prepare the random episode
         raw_df= pd.read_csv(self.path + self.rand_episode)
         extractor = process_data.FeatureExtractor(raw_df)
         # this calculate the distance between ohlc
@@ -103,7 +103,7 @@ class OhlcvEnv(gym.Env):
                 self.exit_price = self.closingPrice
                 #the reward is in percentage
                 self.reward += ((self.entry_price - self.exit_price)/self.exit_price + 1)*(1-self.fee)**2 - 1 # calculate reward
-                #TODO: Check what is krw, cumulative return ?
+                #? Check what is krw, cumulative return ?
                 self.krw_balance = self.krw_balance * (1.0 + self.reward) # evaluate cumulative return in krw-won
                 self.entry_price = 0 # clear entry price
                 self.n_short += 1 # record number of short
